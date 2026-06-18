@@ -16,7 +16,10 @@ NUM_EPISODES="${NUM_EPISODES:-5}"
 EPISODE_TIME_S="${EPISODE_TIME_S:-60}"
 RESET_TIME_S="${RESET_TIME_S:-60}"
 PUSH_TO_HUB="${PUSH_TO_HUB:-true}"
+RESUME="${RESUME:-false}"
 
+# NUM_EPISODES is how many MORE episodes to record this run, not a total -- with RESUME=true
+# it's added on top of whatever's already saved in the dataset.
 lerobot-record \
     --robot.type=so101_follower \
     --robot.port=/dev/ttyACM1 \
@@ -34,4 +37,5 @@ lerobot-record \
     --dataset.episode_time_s="${EPISODE_TIME_S}" \
     --dataset.reset_time_s="${RESET_TIME_S}" \
     --dataset.push_to_hub="${PUSH_TO_HUB}" \
-    --play_sounds=false
+    --play_sounds=false \
+    --resume="${RESUME}"
