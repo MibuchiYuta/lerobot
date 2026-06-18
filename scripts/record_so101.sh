@@ -4,6 +4,8 @@ set -euo pipefail
 # SO-101 dataset recording with cameras integrated.
 # Camera/port notes: see scripts/teleoperate_so101.sh (video2 excluded, "wrist" is gripper-mounted).
 # Requires `hf auth login` first so dataset push-to-hub works and ${HF_USER} resolves below.
+# play_sounds is forced off: this container has no speech-dispatcher daemon running, so the
+# default vocal announcements (spd-say) crash and abort the whole process on cleanup.
 
 HF_USER="${HF_USER:-$(NO_COLOR=1 hf auth whoami 2>/dev/null | awk '{print $NF}')}"
 DATASET_REPO_ID="${DATASET_REPO_ID:-${HF_USER}/so101_test}"
@@ -27,4 +29,5 @@ lerobot-record \
     --dataset.single_task="${TASK_DESCRIPTION}" \
     --dataset.episode_time_s="${EPISODE_TIME_S}" \
     --dataset.reset_time_s="${RESET_TIME_S}" \
-    --dataset.push_to_hub="${PUSH_TO_HUB}"
+    --dataset.push_to_hub="${PUSH_TO_HUB}" \
+    --play_sounds=false
