@@ -6,6 +6,8 @@ set -euo pipefail
 # Requires `hf auth login` first so dataset push-to-hub works and ${HF_USER} resolves below.
 # play_sounds is forced off: this container has no speech-dispatcher daemon running, so the
 # default vocal announcements (spd-say) crash and abort the whole process on cleanup.
+# Run scripts/start_rerun_viewer.sh first and open http://localhost:9090 to see the camera feed --
+# this connects to that server instead of spawning a native viewer (no working GPU/X11 in this container).
 
 HF_USER="${HF_USER:-$(NO_COLOR=1 hf auth whoami 2>/dev/null | awk '{print $NF}')}"
 DATASET_REPO_ID="${DATASET_REPO_ID:-${HF_USER}/so101_test}"
@@ -24,6 +26,8 @@ lerobot-record \
     --teleop.port=/dev/ttyACM0 \
     --teleop.id=so101_leader_1 \
     --display_data=true \
+    --display_ip=127.0.0.1 \
+    --display_port=9876 \
     --dataset.repo_id="${DATASET_REPO_ID}" \
     --dataset.num_episodes="${NUM_EPISODES}" \
     --dataset.single_task="${TASK_DESCRIPTION}" \
