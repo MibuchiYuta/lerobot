@@ -474,3 +474,16 @@ conflicts = [
         { extra = "all" },
     ],
 ]
+
+# RTX 50 系 (Blackwell, sm_120) は CUDA 12.8+ ビルドの torch/torchvision が必要。
+# 通常の PyPI ホイールは sm_120 カーネルを含まないため、Linux では明示的に
+# cu128 インデックスから解決する（postCreateCommand の再インストールで
+# Dockerfile の cu128 ピンが上書きされるのを防ぐ）。
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu128", marker = "sys_platform == 'linux'" }]
+torchvision = [{ index = "pytorch-cu128", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
