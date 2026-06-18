@@ -5,7 +5,7 @@ set -euo pipefail
 # Camera/port notes: see scripts/teleoperate_so101.sh (video2 excluded, "wrist" is gripper-mounted).
 # Requires `hf auth login` first so dataset push-to-hub works and ${HF_USER} resolves below.
 
-HF_USER="${HF_USER:-$(hf auth whoami 2>/dev/null | head -n 1)}"
+HF_USER="${HF_USER:-$(NO_COLOR=1 hf auth whoami 2>/dev/null | awk '{print $NF}')}"
 DATASET_REPO_ID="${DATASET_REPO_ID:-${HF_USER}/so101_test}"
 TASK_DESCRIPTION="${TASK_DESCRIPTION:?Set TASK_DESCRIPTION, e.g. TASK_DESCRIPTION=\"Grab the black cube\"}"
 NUM_EPISODES="${NUM_EPISODES:-5}"
