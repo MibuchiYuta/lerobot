@@ -9,6 +9,9 @@ HF_USER="${HF_USER:-$(hf auth whoami 2>/dev/null | head -n 1)}"
 DATASET_REPO_ID="${DATASET_REPO_ID:-${HF_USER}/so101_test}"
 TASK_DESCRIPTION="${TASK_DESCRIPTION:?Set TASK_DESCRIPTION, e.g. TASK_DESCRIPTION=\"Grab the black cube\"}"
 NUM_EPISODES="${NUM_EPISODES:-5}"
+EPISODE_TIME_S="${EPISODE_TIME_S:-60}"
+RESET_TIME_S="${RESET_TIME_S:-60}"
+PUSH_TO_HUB="${PUSH_TO_HUB:-true}"
 
 lerobot-record \
     --robot.type=so101_follower \
@@ -21,4 +24,7 @@ lerobot-record \
     --display_data=true \
     --dataset.repo_id="${DATASET_REPO_ID}" \
     --dataset.num_episodes="${NUM_EPISODES}" \
-    --dataset.single_task="${TASK_DESCRIPTION}"
+    --dataset.single_task="${TASK_DESCRIPTION}" \
+    --dataset.episode_time_s="${EPISODE_TIME_S}" \
+    --dataset.reset_time_s="${RESET_TIME_S}" \
+    --dataset.push_to_hub="${PUSH_TO_HUB}"
