@@ -318,6 +318,11 @@ def record_loop(
         preprocessor.reset()
         postprocessor.reset()
 
+    # A skip key (e.g. right arrow) pressed right as the previous phase's timer naturally elapsed
+    # can leave this set without the loop below ever consuming it (the `timestamp < control_time_s`
+    # check is evaluated before `exit_early`), which would otherwise instantly truncate this phase.
+    events["exit_early"] = False
+
     timestamp = 0
     start_episode_t = time.perf_counter()
     while timestamp < control_time_s:
