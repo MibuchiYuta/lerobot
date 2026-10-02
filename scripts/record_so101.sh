@@ -28,6 +28,13 @@ EPISODE_TIME_S="${EPISODE_TIME_S:-60}"
 RESET_TIME_S="${RESET_TIME_S:-60}"
 PUSH_TO_HUB="${PUSH_TO_HUB:-true}"
 RESUME="${RESUME:-false}"
+case "${RESUME}" in
+    true|false) ;;
+    *)
+        printf 'Invalid RESUME. Set RESUME=true or RESUME=false; got: %s\n' "${RESUME}" >&2
+        exit 2
+        ;;
+esac
 
 # NUM_EPISODES is how many MORE episodes to record with RESUME=true.
 record_command=(lerobot-record
@@ -48,7 +55,10 @@ fi
 
 # Prevent two local recorders from concurrently appending to the same dataset.
 LOCK_DIR="${SO101_LOCK_DIR:-/tmp/lerobot-so101-locks}"
-mkdir -p -- "${LOCK_DIR}"
+if ! mkdir -p -- "${LOCK_DIR}"; then
+    printf 'Unable to create SO101_LOCK_DIR for the local recorder lock: %s\n' "${LOCK_DIR}" >&2
+    exit 1
+fi
 LOCK_KEY="$(printf '%s' "${DATASET_REPO_ID}" | sha256sum | cut -d' ' -f1)"
 LOCK_FILE="${LOCK_DIR}/${LOCK_KEY}.lock"
 exec {lock_fd}>"${LOCK_FILE}"

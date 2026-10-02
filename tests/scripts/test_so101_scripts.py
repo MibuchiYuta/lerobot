@@ -77,6 +77,35 @@ def test_train_rejects_unknown_policy() -> None:
     assert "Set POLICY=act or POLICY=diffusion" in result.stderr
 
 
+def test_record_rejects_invalid_resume_value() -> None:
+    result = run_script(
+        "record_so101.sh",
+        environment={"TASK_DESCRIPTION": "Pick up a cube", "RESUME": "invalid"},
+    )
+
+    assert result.returncode == 2
+    assert "Set RESUME=true or RESUME=false" in result.stderr
+
+
+def test_record_reports_an_unusable_lock_directory(tmp_path: Path) -> None:
+    lock_file = tmp_path / "not-a-directory"
+    lock_file.touch()
+    result = subprocess.run(
+        ["bash", str(SCRIPTS_DIR / "record_so101.sh")],
+        check=False,
+        capture_output=True,
+        env={
+            **os.environ,
+            "TASK_DESCRIPTION": "Pick up a cube",
+            "SO101_LOCK_DIR": str(lock_file),
+        },
+        text=True,
+    )
+
+    assert result.returncode == 1
+    assert "Unable to create SO101_LOCK_DIR" in result.stderr
+
+
 def test_record_uses_a_per_dataset_local_lock() -> None:
     source = (SCRIPTS_DIR / "record_so101.sh").read_text()
 
