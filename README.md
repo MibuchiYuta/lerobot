@@ -125,6 +125,23 @@ lerobot-eval \
 
 Learn how to implement your own simulation environment or benchmark and distribute it from the HF Hub by following the [EnvHub Documentation](https://huggingface.co/docs/lerobot/envhub)
 
+## SO-101 imitation-learning workflow
+
+This checkout includes an offline-safe SO-101 workflow in [`scripts/`](./scripts)
+that uses `LeRobotDataset` for teleoperation data collection, ACT or Diffusion
+Policy training, learned-policy evaluation on real hardware, and action replay.
+Hardware-facing wrappers accept `--dry-run`, which only prints the resulting
+command and does not access a robot, cameras, datasets, authentication, or the
+network.
+
+```bash
+TASK_DESCRIPTION="Pick up the black cube" scripts/record_so101.sh --dry-run
+DATASET_REPO_ID=my-org/so101_cube POLICY=act scripts/train_so101.sh --dry-run
+```
+
+See [`projects/lerobot.md`](./projects/lerobot.md) for the connection-layer
+environment-variable contract, real-hardware commands, and safety boundaries.
+
 ## Resources
 
 - **[Documentation](https://huggingface.co/docs/lerobot/index):** The complete guide to tutorials & API.
