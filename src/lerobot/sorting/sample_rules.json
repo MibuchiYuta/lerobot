@@ -1,0 +1,15 @@
+{
+  "default_destination": "center",
+  "rules": [
+    {"id": "pink-left", "text": "ピンクを含む物は左へ", "destination": "left", "priority": 10, "when": {"colors_any": ["pink"]}},
+    {"id": "round-center", "text": "丸い物は必ず中央へ", "destination": "center", "priority": 1, "force": true, "when": {"shapes_any": ["round"]}},
+    {"id": "red-cube-right", "text": "赤い立方体は右へ", "destination": "right", "priority": 20, "when": {"colors_any": ["red"], "kinds_any": ["cube"]}},
+    {"id": "blue-left-zone", "text": "左側にある青い物は左へ", "destination": "left", "priority": 5, "when": {"colors_any": ["blue"], "x": [null, 0.33]}},
+    {"id": "green-cylinder-right", "text": "緑の円柱は右へ", "destination": "right", "priority": 5, "when": {"colors_any": ["green"], "kinds_any": ["cylinder"]}},
+    {"id": "yellow-triangle-center", "text": "黄色い三角形は中央へ", "destination": "center", "priority": 5, "when": {"colors_any": ["yellow"], "shapes_any": ["triangle"]}},
+    {"id": "silver-gear-left", "text": "銀色のギアは左へ", "destination": "left", "priority": 5, "when": {"colors_any": ["silver"], "kinds_any": ["gear"]}},
+    {"id": "purple-star-right", "text": "紫の星形は右へ", "destination": "right", "priority": 5, "when": {"colors_any": ["purple"], "shapes_any": ["star"]}},
+    {"id": "orange-square-center", "text": "オレンジの四角は中央へ", "destination": "center", "priority": 5, "when": {"colors_any": ["orange"], "shapes_any": ["square"]}},
+    {"id": "black-lower-cube-right", "text": "下側にある黒い立方体は右へ", "destination": "right", "priority": 5, "when": {"colors_any": ["black"], "kinds_any": ["cube"], "y": [0.67, null]}}
+  ]
+}

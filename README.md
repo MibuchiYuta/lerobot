@@ -144,6 +144,10 @@ The connection-layer environment-variable contract is in
 procedure and real-hardware safety boundaries have a single canonical record in
 the parent personal-kb repository's `projects/lerobot.md`.
 
+## SO-101 Rule-Based Sorting
+
+The lightweight [`lerobot.sorting`](./src/lerobot/sorting/README.md) module routes perception results through versioned JSON rules, including deterministic conflict resolution. It is designed for SO-101 object sorting and makes no LLM call while deciding a destination.
+
 ## Resources
 
 - **[Documentation](https://huggingface.co/docs/lerobot/index):** The complete guide to tutorials & API.
