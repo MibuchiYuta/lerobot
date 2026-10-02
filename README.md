@@ -139,8 +139,10 @@ TASK_DESCRIPTION="Pick up the black cube" scripts/record_so101.sh --dry-run
 DATASET_REPO_ID=my-org/so101_cube POLICY=act scripts/train_so101.sh --dry-run
 ```
 
-See [`projects/lerobot.md`](./projects/lerobot.md) for the connection-layer
-environment-variable contract, real-hardware commands, and safety boundaries.
+The connection-layer environment-variable contract is in
+[`scripts/so101_env.sh`](./scripts/so101_env.sh). The current SO-101 operating
+procedure and real-hardware safety boundaries have a single canonical record in
+the parent personal-kb repository's `projects/lerobot.md`.
 
 ## Resources
 

@@ -63,7 +63,8 @@ def test_eval_rejects_non_evaluation_dataset_name() -> None:
     )
 
     assert result.returncode == 2
-    assert "beginning eval_" in result.stderr
+    assert "prefixed with eval_" in result.stderr
+    assert "org/eval_task" in result.stderr
 
 
 def test_train_rejects_unknown_policy() -> None:
@@ -73,4 +74,11 @@ def test_train_rejects_unknown_policy() -> None:
     )
 
     assert result.returncode == 2
-    assert "POLICY must be act or diffusion" in result.stderr
+    assert "Set POLICY=act or POLICY=diffusion" in result.stderr
+
+
+def test_record_uses_a_per_dataset_local_lock() -> None:
+    source = (SCRIPTS_DIR / "record_so101.sh").read_text()
+
+    assert "SO101_LOCK_DIR" in source
+    assert "flock -n" in source

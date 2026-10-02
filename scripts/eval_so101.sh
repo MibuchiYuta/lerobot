@@ -18,7 +18,8 @@ done
 POLICY_PATH="${POLICY_PATH:?Set POLICY_PATH to a local checkpoint or Hub policy id}"
 DATASET_REPO_ID="${DATASET_REPO_ID:?Set DATASET_REPO_ID (its dataset name must begin eval_)}"
 if [[ "${DATASET_REPO_ID##*/}" != eval_* ]]; then
-    printf 'Evaluation DATASET_REPO_ID must have a dataset name beginning eval_: %s\n' "${DATASET_REPO_ID}" >&2
+    printf 'Evaluation DATASET_REPO_ID must use a dataset name prefixed with eval_ (for example, org/eval_task): %s\n' \
+        "${DATASET_REPO_ID}" >&2
     exit 2
 fi
 TASK_DESCRIPTION="${TASK_DESCRIPTION:?Set TASK_DESCRIPTION for the evaluation task}"

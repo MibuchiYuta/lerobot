@@ -16,7 +16,13 @@ while (($#)); do
 done
 
 POLICY="${POLICY:-act}"
-case "${POLICY}" in act|diffusion) ;; *) printf 'POLICY must be act or diffusion, got: %s\n' "${POLICY}" >&2; exit 2 ;; esac
+case "${POLICY}" in
+    act|diffusion) ;;
+    *)
+        printf 'Invalid POLICY. Set POLICY=act or POLICY=diffusion; got: %s\n' "${POLICY}" >&2
+        exit 2
+        ;;
+esac
 DATASET_REPO_ID="${DATASET_REPO_ID:?Set DATASET_REPO_ID to a recorded LeRobotDataset repo id}"
 OUTPUT_DIR="${OUTPUT_DIR:-outputs/train/${POLICY}_so101}"
 JOB_NAME="${JOB_NAME:-${POLICY}_so101}"
