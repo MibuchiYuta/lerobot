@@ -147,6 +147,19 @@ the parent personal-kb repository's `projects/lerobot.md`.
 ## SO-101 Rule-Based Sorting
 
 The lightweight [`lerobot.sorting`](./src/lerobot/sorting/README.md) module routes perception results through versioned JSON rules, including deterministic conflict resolution. It is designed for SO-101 object sorting and makes no LLM call while deciding a destination.
+## SO-101 Experiment Orchestration
+
+`lerobot.experiments` is a small, hardware-agnostic foundation for unattended, bounded trial runs. It writes one structured JSON record per trial, stops before a new trial when an external safety adapter reports a stop condition, and can also stop on post-trial anomalies or consecutive failures. It imports no SO-101 hardware, perception, rule-engine, or policy module: each integration supplies a callable adapter at the application boundary.
+
+Run the full loop without a robot using the deterministic mock adapter:
+
+```bash
+python -m lerobot.experiments --log-path /tmp/so101-trials.jsonl --max-trials 5
+```
+
+Use `run_experiment()` with `ExperimentConfig`, a `TrialOutcome`-returning trial callable, and optional `safety_check` / `anomaly_detector` callables. `generate_report()` reads the JSON Lines log and returns total trials, success rate, average duration, and failure-pattern counts. The loop is a safety coordinator, not a replacement for the hardware emergency-stop mechanism; production adapters must keep the hardware safety guard active independently. Before connecting an SO-101 or operating unattended or overnight, complete the [SO-101 setup guide](docs/source/so101.mdx) and meet every local safety prerequisite, including a tested physical E-stop, independent motor-power cutoff, mechanical support, and validated current limits.
+
+To print the aggregate as JSON after a run, use `lerobot-experiment-report /tmp/so101-trials.jsonl`.
 
 ## Resources
 
