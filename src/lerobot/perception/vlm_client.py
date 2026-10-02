@@ -49,7 +49,10 @@ class OllamaVLMClient:
         try:
             content = response["message"]["content"]
         except (KeyError, TypeError) as error:
-            raise ValueError("Ollama response lacks message.content") from error
+            raise ValueError(
+                "Ollama response lacks message.content; check the Ollama endpoint, model compatibility, "
+                "and response structure."
+            ) from error
         if not isinstance(content, str) or not content.strip():
             raise ValueError("Ollama response contains an empty message.content")
         return content.strip()

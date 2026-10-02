@@ -3,13 +3,29 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import random
 import shutil
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Iterator
 
 from .color_detection import HSVRange, _cv2, detect_color
 
 IMAGE_SUFFIXES = {".bmp", ".jpeg", ".jpg", ".png", ".webp"}
+
+
+@contextmanager
+def _output_lock(output_dir: Path) -> Iterator[None]:
+    """Serialise writers targeting the same generated dataset directory."""
+    output_dir.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = output_dir.parent / f".{output_dir.name}.lock"
+    with lock_path.open("a+") as lock_file:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 
 def image_paths(images_dir: Path) -> list[Path]:
@@ -45,19 +61,20 @@ def split_dataset(images_dir: Path, labels_dir: Path, output_dir: Path, train_ra
         raise ValueError("at least two images are required to create train and validation splits")
     random.Random(seed).shuffle(paths)
     split_index = min(max(1, round(len(paths) * train_ratio)), len(paths) - 1)
-    for split, split_paths in (("train", paths[:split_index]), ("val", paths[split_index:])):
-        for image_path in split_paths:
-            label_path = labels_dir / f"{image_path.stem}.txt"
-            if not label_path.exists():
-                raise FileNotFoundError(f"missing label for {image_path.name}: {label_path}")
-            image_target = output_dir / "images" / split / image_path.name
-            label_target = output_dir / "labels" / split / label_path.name
-            image_target.parent.mkdir(parents=True, exist_ok=True)
-            label_target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(image_path, image_target)
-            shutil.copy2(label_path, label_target)
-    config = output_dir / "dataset.yaml"
-    config.write_text(f"path: {output_dir.resolve()}\ntrain: images/train\nval: images/val\nnames:\n  0: object\n")
+    with _output_lock(output_dir):
+        for split, split_paths in (("train", paths[:split_index]), ("val", paths[split_index:])):
+            for image_path in split_paths:
+                label_path = labels_dir / f"{image_path.stem}.txt"
+                if not label_path.exists():
+                    raise FileNotFoundError(f"missing label for {image_path.name}: {label_path}")
+                image_target = output_dir / "images" / split / image_path.name
+                label_target = output_dir / "labels" / split / label_path.name
+                image_target.parent.mkdir(parents=True, exist_ok=True)
+                label_target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(image_path, image_target)
+                shutil.copy2(label_path, label_target)
+        config = output_dir / "dataset.yaml"
+        config.write_text(f"path: {output_dir.resolve()}\ntrain: images/train\nval: images/val\nnames:\n  0: object\n")
     return config
 
 

@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from lerobot.perception.vlm_client import OllamaVLMClient
 
 
@@ -22,3 +24,11 @@ def test_vlm_client_uses_injected_transport(tmp_path):
     assert received["url"].endswith("/api/chat")
     assert received["body"]["model"] == "test-model"
     assert received["body"]["messages"][0]["images"]
+
+
+def test_vlm_client_explains_how_to_debug_an_unexpected_response(tmp_path):
+    image = tmp_path / "image.png"
+    image.write_bytes(b"fake-image")
+
+    with pytest.raises(ValueError, match="check the Ollama endpoint, model compatibility, and response structure"):
+        OllamaVLMClient(transport=lambda *_args: {}).classify(image)
