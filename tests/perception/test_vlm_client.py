@@ -3,6 +3,10 @@ import json
 from lerobot.perception.vlm_client import OllamaVLMClient
 
 
+def test_vlm_client_defaults_to_installed_vision_model():
+    assert OllamaVLMClient().model == "qwen2.5vl:7b"
+
+
 def test_vlm_client_uses_injected_transport(tmp_path):
     image = tmp_path / "image.png"
     image.write_bytes(b"fake-image")

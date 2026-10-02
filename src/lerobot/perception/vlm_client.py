@@ -27,7 +27,7 @@ class OllamaVLMClient:
 
     def __init__(
         self,
-        model: str = "qwen3:14b",
+        model: str = "qwen2.5vl:7b",
         host: str = "http://127.0.0.1:11434",
         timeout: float = 30.0,
         transport: Transport = ollama_transport,
