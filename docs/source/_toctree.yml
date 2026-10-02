@@ -85,6 +85,8 @@
 - sections:
   - local: so101
     title: SO-101
+  - local: so101_safe_setup
+    title: SO-101 安全セットアップ
   - local: so100
     title: SO-100
   - local: koch

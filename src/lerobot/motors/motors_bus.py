@@ -531,12 +531,15 @@ class SerialMotorsBus(MotorsBusBase):
                 after disconnect.
         """
 
-        if disable_torque:
-            self.port_handler.clearPort()
-            self.port_handler.is_using = False
-            self.disable_torque(num_retry=5)
-
-        self.port_handler.closePort()
+        try:
+            if disable_torque:
+                self.port_handler.clearPort()
+                self.port_handler.is_using = False
+                self.disable_torque(num_retry=5)
+        finally:
+            # A bus error while disabling torque must not also leak the serial
+            # handle.  The original torque error is preserved for the caller.
+            self.port_handler.closePort()
         logger.debug(f"{self.__class__.__name__} disconnected.")
 
     @classmethod

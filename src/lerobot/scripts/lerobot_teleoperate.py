@@ -237,8 +237,13 @@ def teleoperate(cfg: TeleoperateConfig):
     finally:
         if cfg.display_data:
             rr.rerun_shutdown()
-        teleop.disconnect()
-        robot.disconnect()
+        # Always attempt follower cleanup even when the leader has already lost
+        # USB communication.  A failure to disconnect one device must not leave
+        # torque enabled on the other.
+        try:
+            teleop.disconnect()
+        finally:
+            robot.disconnect()
 
 
 def main():

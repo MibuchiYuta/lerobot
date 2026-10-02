@@ -7,6 +7,8 @@ set -euo pipefail
 # default vocal announcements (spd-say) crash and abort the whole process on cleanup.
 # Run scripts/start_rerun_viewer.sh first and open http://localhost:9090 to see the camera feed --
 # this connects to that server instead of spawning a native viewer (no working GPU/X11 in this container).
+# Defaults match docs/source/so101_safe_setup.md calibration examples: follower ACM0, leader ACM1.
+# If USB enumeration differs, recalibrate and update every SO-101 command consistently.
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091 # Runtime path is derived from this script's directory.

@@ -6,11 +6,11 @@
 # know about a particular serial-discovery implementation.
 
 SO101_ROBOT_TYPE="${SO101_ROBOT_TYPE:-so101_follower}"
-SO101_ROBOT_PORT="${SO101_ROBOT_PORT:-/dev/ttyACM1}"
-SO101_ROBOT_ID="${SO101_ROBOT_ID:-so101_follower_1}"
+SO101_ROBOT_PORT="${SO101_ROBOT_PORT:-/dev/ttyACM0}"
+SO101_ROBOT_ID="${SO101_ROBOT_ID:-so101_follower}"
 SO101_TELEOP_TYPE="${SO101_TELEOP_TYPE:-so101_leader}"
-SO101_TELEOP_PORT="${SO101_TELEOP_PORT:-/dev/ttyACM0}"
-SO101_TELEOP_ID="${SO101_TELEOP_ID:-so101_leader_1}"
+SO101_TELEOP_PORT="${SO101_TELEOP_PORT:-/dev/ttyACM1}"
+SO101_TELEOP_ID="${SO101_TELEOP_ID:-so101_leader}"
 SO101_CAMERAS="${SO101_CAMERAS:-{top: {type: opencv, index_or_path: /dev/video0, width: 640, height: 480, fps: 30, fourcc: MJPG}, wrist: {type: opencv, index_or_path: /dev/video4, width: 640, height: 480, fps: 30, fourcc: MJPG}}}"
 SO101_DISPLAY_DATA="${SO101_DISPLAY_DATA:-true}"
 SO101_DISPLAY_IP="${SO101_DISPLAY_IP:-127.0.0.1}"
