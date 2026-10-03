@@ -30,5 +30,5 @@ def test_vlm_client_explains_how_to_debug_an_unexpected_response(tmp_path):
     image = tmp_path / "image.png"
     image.write_bytes(b"fake-image")
 
-    with pytest.raises(ValueError, match="check the Ollama endpoint, model compatibility, and response structure"):
+    with pytest.raises(ValueError, match="installed model and Ollama version"):
         OllamaVLMClient(transport=lambda *_args: {}).classify(image)

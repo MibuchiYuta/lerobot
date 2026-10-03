@@ -48,10 +48,25 @@ def test_force_rule_resolves_conflicts():
         }
     )
 
+    # This object matches every rule: ``specific`` requires both red and cube,
+    # while ``first`` and ``forced`` require red only. Forced rules rank first;
+    # between the two non-forced equal-priority rules, ``specific`` ranks first.
     decision = RuleEngine(rules).decide(DetectedObject.from_mapping({"kind": "cube", "color": "red"}))
 
     assert decision.destination == "center"
     assert decision.matched_rule_ids == ("forced", "specific", "first")
+
+
+@pytest.mark.parametrize(
+    ("raw_object", "expected_colors"),
+    [
+        ({"kind": "cube", "color": None}, frozenset()),
+        ({"kind": "cube", "colors": None}, frozenset()),
+        ({"kind": "cube", "colors": None, "color": "red"}, frozenset({"red"})),
+    ],
+)
+def test_detected_object_treats_none_colors_as_missing(raw_object, expected_colors):
+    assert DetectedObject.from_mapping(raw_object).colors == expected_colors
 
 
 @pytest.mark.parametrize(

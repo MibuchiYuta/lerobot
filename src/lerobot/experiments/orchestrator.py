@@ -49,7 +49,7 @@ class ExperimentConfig:
 
     def __post_init__(self) -> None:
         if self.max_trials is None and self.max_duration_s is None:
-            raise ValueError("Set max_trials and/or max_duration_s.")
+            raise ValueError("At least one of max_trials or max_duration_s must be set.")
         if self.max_trials is not None and self.max_trials < 1:
             raise ValueError("max_trials must be at least 1.")
         if self.max_duration_s is not None and self.max_duration_s <= 0:

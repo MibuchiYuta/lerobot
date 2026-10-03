@@ -91,7 +91,7 @@ def test_trial_exceptions_are_recorded_as_failures(tmp_path):
 
 
 def test_config_requires_a_bound():
-    with pytest.raises(ValueError, match="max_trials"):
+    with pytest.raises(ValueError, match="max_trials.*max_duration_s"):
         ExperimentConfig()
 
 

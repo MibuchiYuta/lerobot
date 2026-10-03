@@ -40,7 +40,11 @@ class DetectedObject:
         if not isinstance(kind, str) or not kind.strip():
             raise ValueError("Detected object requires a non-empty 'kind' or 'label'.")
 
-        raw_colors = value.get("colors", value.get("color", ()))
+        raw_colors = value.get("colors")
+        if raw_colors is None:
+            raw_colors = value.get("color", ())
+        if raw_colors is None:
+            raw_colors = ()
         if isinstance(raw_colors, str):
             colors = frozenset({_normalise_label(raw_colors)})
         elif isinstance(raw_colors, Sequence):
