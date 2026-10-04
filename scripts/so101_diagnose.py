@@ -18,7 +18,9 @@ def main() -> int:
     bus = FeetechMotorsBus(port=args.port, motors=motors)
     try:
         bus.connect()
-        print(json.dumps(bus.sync_read("Present_Position"), indent=2, sort_keys=True))
+        # Calibration is not available yet, so preserve the raw encoder readings.
+        raw_encoder_positions = bus.sync_read("Present_Position", normalize=False)
+        print(json.dumps({"raw_encoder_positions": raw_encoder_positions}, indent=2, sort_keys=True))
     finally:
         if bus.is_connected:
             # Diagnostic must not change torque state.

@@ -35,6 +35,8 @@ udevadm info --query=property --name=/dev/ttyACM0
 ## 2. 読み取り専用診断
 
 モーター電源を入れ、各アームを個別に確認します。診断はゴール位置・トルクを変更しません。
+出力される 6 個の値は、キャリブレーション前の生エンコーダ値（正規化前）です。値の範囲だけで正常と判断せず、
+6 個の値がそろうことと通信例外がないことを確認します。
 
 ```bash
 uv run python scripts/so101_diagnose.py /dev/ttyACM0
