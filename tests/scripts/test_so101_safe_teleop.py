@@ -40,14 +40,15 @@ def load_teleop_module(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("failure", "expected_status", "expected_level", "has_exception"),
+    ("failure", "monitor_failure", "expected_status", "expected_level", "has_exception"),
     [
-        (KeyboardInterrupt(), 130, logging.INFO, False),
-        (RuntimeError("communication lost"), 1, logging.ERROR, True),
+        (KeyboardInterrupt(), None, 130, logging.INFO, False),
+        (RuntimeError("communication lost"), None, 1, logging.ERROR, True),
+        (None, "safety fault", 1, logging.ERROR, True),
     ],
 )
 def test_teleop_logs_normal_interrupts_at_info_and_failures_at_error(
-    monkeypatch, caplog, failure, expected_status, expected_level, has_exception
+    monkeypatch, caplog, failure, monitor_failure, expected_status, expected_level, has_exception
 ):
     module = load_teleop_module(monkeypatch)
     devices = []
@@ -68,7 +69,9 @@ def test_teleop_logs_normal_interrupts_at_info_and_failures_at_error(
 
     class Leader(Device):
         def get_action(self):
-            raise failure
+            if failure is not None:
+                raise failure
+            return {}
 
     class Monitor:
         is_latched = False
@@ -79,6 +82,11 @@ def test_teleop_logs_normal_interrupts_at_info_and_failures_at_error(
         def trip(self, _reason):
             self.is_latched = True
             raise module.SafetyFault()
+
+        def check_action(self, _action):
+            if monitor_failure is not None:
+                self.is_latched = True
+                raise module.SafetyFault(monitor_failure)
 
     monkeypatch.setattr(module, "SO101Follower", Device)
     monkeypatch.setattr(module, "SO101Leader", Leader)
