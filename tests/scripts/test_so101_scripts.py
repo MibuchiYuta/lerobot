@@ -121,18 +121,32 @@ def test_record_dry_run_preserves_camera_override_as_yaml() -> None:
     assert cameras["wrist"]["index_or_path"] == "/dev/video8"
 
 
-def test_record_requires_display_and_xauthority_outside_dry_run() -> None:
+@pytest.mark.parametrize(
+    ("display", "xauthority", "expected_missing"),
+    [
+        ("", "", "DISPLAY XAUTHORITY"),
+        (":0", "", "XAUTHORITY"),
+    ],
+)
+def test_record_requires_display_and_xauthority_outside_dry_run(
+    display: str, xauthority: str, expected_missing: str
+) -> None:
     result = subprocess.run(
         ["bash", str(SCRIPTS_DIR / "record_so101.sh")],
         check=False,
         capture_output=True,
-        env={**os.environ, "TASK_DESCRIPTION": "Pick up a cube", "DISPLAY": "", "XAUTHORITY": ""},
+        env={
+            **os.environ,
+            "TASK_DESCRIPTION": "Pick up a cube",
+            "DISPLAY": display,
+            "XAUTHORITY": xauthority,
+        },
         text=True,
     )
 
     assert result.returncode == 1
     assert "Cannot record with keyboard controls" in result.stderr
-    assert "DISPLAY XAUTHORITY is unset" in result.stderr
+    assert f"{expected_missing} is unset" in result.stderr
 
 
 def test_record_reports_an_unusable_lock_directory(tmp_path: Path) -> None:
