@@ -68,8 +68,11 @@ def main() -> int:
                 monitor.trip(f"teleoperation failure: {type(exc).__name__}: {exc}")
             except SafetyFault:
                 pass
-        logging.exception("SO-101 teleoperation stopped", exc_info=not isinstance(exc, KeyboardInterrupt))
-        return 130 if isinstance(exc, KeyboardInterrupt) else 1
+        if isinstance(exc, KeyboardInterrupt):
+            logging.info("SO-101 teleoperation stopped")
+            return 130
+        logging.exception("SO-101 teleoperation stopped")
+        return 1
     finally:
         # Both devices must be attempted independently; leader cleanup cannot leave follower powered.
         for device in (follower, leader):
