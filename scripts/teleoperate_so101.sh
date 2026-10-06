@@ -2,8 +2,7 @@
 set -euo pipefail
 
 # SO-101 teleoperate with cameras integrated.
-# video2 (Anker webcam) is excluded: it's used for video conferencing, not workspace capture.
-# "wrist" (video4) is mounted on the gripper itself -- confirmed by rotating wrist_roll and seeing
+# "wrist" (video2, HBVCAM) is mounted on the gripper itself -- confirmed by rotating wrist_roll and seeing
 # the frame rotate in sync, so its view follows the arm rather than needing a fixed repositioning.
 # Run scripts/start_rerun_viewer.sh first and open http://localhost:9090 to see the camera feed --
 # this connects to that server instead of spawning a native viewer (no working GPU/X11 in this container).

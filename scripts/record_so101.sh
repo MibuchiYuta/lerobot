@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # SO-101 teleoperation data collection in LeRobotDataset format.
-# Camera/port notes: video2 is excluded and "wrist" is gripper-mounted.
+# Camera/port notes: top=/dev/video0; wrist=/dev/video2 (HBVCAM) is gripper-mounted.
 # play_sounds is forced off: this container has no speech-dispatcher daemon running, so the
 # default vocal announcements (spd-say) crash and abort the whole process on cleanup.
 # Run scripts/start_rerun_viewer.sh first and open http://localhost:9090 to see the camera feed --
@@ -54,6 +54,8 @@ if [[ "${SO101_DRY_RUN:-false}" == "true" ]]; then
     so101_execute "${record_command[@]}"
     exit 0
 fi
+
+so101_require_display
 
 # Prevent two local recorders from concurrently appending to the same dataset.
 LOCK_DIR="${SO101_LOCK_DIR:-/tmp/lerobot-so101-locks}"

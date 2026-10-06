@@ -11,7 +11,11 @@ SO101_ROBOT_ID="${SO101_ROBOT_ID:-so101_follower}"
 SO101_TELEOP_TYPE="${SO101_TELEOP_TYPE:-so101_leader}"
 SO101_TELEOP_PORT="${SO101_TELEOP_PORT:-/dev/ttyACM1}"
 SO101_TELEOP_ID="${SO101_TELEOP_ID:-so101_leader}"
-SO101_CAMERAS="${SO101_CAMERAS:-{top: {type: opencv, index_or_path: /dev/video0, width: 640, height: 480, fps: 30, fourcc: MJPG}, wrist: {type: opencv, index_or_path: /dev/video4, width: 640, height: 480, fps: 30, fourcc: MJPG}}}"
+# Keep /dev/videoN paths: the cameras' by-id entries share a serial number and
+# therefore cannot distinguish the devices. Override SO101_CAMERAS if USB
+# enumeration changes these paths.
+SO101_CAMERAS_DEFAULT='{top: {type: opencv, index_or_path: /dev/video0, width: 640, height: 480, fps: 30, fourcc: MJPG}, wrist: {type: opencv, index_or_path: /dev/video2, width: 640, height: 480, fps: 30, fourcc: MJPG}}'
+SO101_CAMERAS="${SO101_CAMERAS:-${SO101_CAMERAS_DEFAULT}}"
 SO101_DISPLAY_DATA="${SO101_DISPLAY_DATA:-true}"
 SO101_DISPLAY_IP="${SO101_DISPLAY_IP:-127.0.0.1}"
 SO101_DISPLAY_PORT="${SO101_DISPLAY_PORT:-9876}"
@@ -28,6 +32,18 @@ so101_execute() {
         return 0
     fi
     command "$@"
+}
+
+so101_require_display() {
+    local missing=()
+
+    [[ -n "${DISPLAY:-}" ]] || missing+=(DISPLAY)
+    [[ -n "${XAUTHORITY:-}" ]] || missing+=(XAUTHORITY)
+    if ((${#missing[@]})); then
+        printf 'Cannot record with keyboard controls: %s is unset. Set DISPLAY and XAUTHORITY for the graphical session, then retry.\n' \
+            "${missing[*]}" >&2
+        return 1
+    fi
 }
 
 so101_usage() {
