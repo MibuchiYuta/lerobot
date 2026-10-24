@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
@@ -46,11 +47,13 @@ def _parse_episodes(value: str) -> list[int]:
     return episodes
 
 
-def _mean_action(dataset: LeRobotDataset, batch_size: int) -> torch.Tensor:
+def _mean_action(
+    dataset: LeRobotDataset, batch_size: int, max_batches: int | None = None
+) -> torch.Tensor:
     total: torch.Tensor | None = None
     count = 0
     loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=0)
-    for batch in loader:
+    for batches, batch in enumerate(loader, start=1):
         actions = batch[ACTION].float()
         pad = batch.get("action_is_pad")
         valid = torch.ones_like(actions, dtype=torch.bool)
@@ -59,9 +62,39 @@ def _mean_action(dataset: LeRobotDataset, batch_size: int) -> torch.Tensor:
         action_sum = actions.masked_fill(~valid, 0).sum(dim=tuple(range(actions.ndim - 1)))
         total = action_sum if total is None else total + action_sum
         count += int(valid.sum().item() // actions.shape[-1])
+        if max_batches is not None and batches >= max_batches:
+            break
     if total is None or count == 0:
         raise ValueError("hold-out dataset has no valid actions")
     return total / count
+
+
+def _write_metrics(output: Path, metrics: dict[str, Any], overwrite: bool) -> None:
+    """Atomically persist metrics, without silently replacing an existing file."""
+    output.parent.mkdir(parents=True, exist_ok=True)
+    if output.exists() and not overwrite:
+        raise FileExistsError(f"output already exists (pass --overwrite to replace it): {output}")
+
+    lock = output.with_name(f".{output.name}.lock")
+    try:
+        lock_fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError as error:
+        raise FileExistsError(f"output is being written by another evaluator: {output}") from error
+
+    temporary = output.with_name(f".{output.name}.{os.getpid()}.tmp")
+    try:
+        with os.fdopen(lock_fd, "w"):
+            pass
+        if output.exists() and not overwrite:
+            raise FileExistsError(f"output already exists (pass --overwrite to replace it): {output}")
+        with temporary.open("w", encoding="utf-8") as file:
+            file.write(json.dumps(metrics, ensure_ascii=False, indent=2) + "\n")
+            file.flush()
+            os.fsync(file.fileno())
+        os.replace(temporary, output)
+    finally:
+        temporary.unlink(missing_ok=True)
+        lock.unlink(missing_ok=True)
 
 
 def evaluate(
@@ -73,10 +106,13 @@ def evaluate(
     device: str,
     video_backend: str,
     max_batches: int | None,
+    overwrite: bool = False,
 ) -> dict[str, Any]:
     """Run a checkpoint over hold-out dataset episodes and persist JSON metrics."""
     if not checkpoint.is_dir():
         raise FileNotFoundError(f"checkpoint directory does not exist: {checkpoint}")
+    if max_batches is not None and max_batches <= 0:
+        raise ValueError("max_batches must be positive when provided")
     config = PreTrainedConfig.from_pretrained(checkpoint)
     config.device = device
     metadata = LeRobotDatasetMetadata(dataset_repo_id)
@@ -87,7 +123,7 @@ def evaluate(
         delta_timestamps=delta_timestamps,
         video_backend=video_backend,
     )
-    mean_action = _mean_action(dataset, batch_size)
+    mean_action = _mean_action(dataset, batch_size, max_batches)
     policy_class = get_policy_class(config.type)
     policy = policy_class.from_pretrained(checkpoint, config=config, strict=True)
     preprocessor, _ = make_pre_post_processors(config, pretrained_path=str(checkpoint))
@@ -139,8 +175,7 @@ def evaluate(
         },
         "hardware_access": False,
     }
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(metrics, ensure_ascii=False, indent=2) + "\n")
+    _write_metrics(output, metrics, overwrite)
     return metrics
 
 
@@ -150,9 +185,10 @@ def main() -> None:
     parser.add_argument("--dataset.repo_id", dest="dataset_repo_id", required=True)
     parser.add_argument("--holdout-episodes", type=_parse_episodes, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--overwrite", action="store_true", help="replace an existing output atomically")
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--device", default="cuda")
-    parser.add_argument("--video-backend", default="pyav")
+    parser.add_argument("--video-backend", "--dataset.video_backend", dest="video_backend", default="pyav")
     parser.add_argument("--max-batches", type=int, default=None)
     args = parser.parse_args()
     print(json.dumps(evaluate(**vars(args)), ensure_ascii=False, indent=2))
