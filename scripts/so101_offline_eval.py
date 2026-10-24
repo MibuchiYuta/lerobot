@@ -8,6 +8,7 @@ It neither imports robot/camera modules nor opens serial or video devices.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import os
 from collections.abc import Iterable
@@ -17,6 +18,7 @@ from typing import Any
 import torch
 
 from lerobot.configs.policies import PreTrainedConfig
+from lerobot.datasets.factory import resolve_delta_timestamps
 from lerobot.datasets.lerobot_dataset import LeRobotDataset, LeRobotDatasetMetadata
 from lerobot.policies.factory import get_policy_class, make_pre_post_processors
 from lerobot.utils.constants import ACTION
@@ -47,9 +49,7 @@ def _parse_episodes(value: str) -> list[int]:
     return episodes
 
 
-def _mean_action(
-    dataset: LeRobotDataset, batch_size: int, max_batches: int | None = None
-) -> torch.Tensor:
+def _mean_action(dataset: LeRobotDataset, batch_size: int, max_batches: int | None = None) -> torch.Tensor:
     total: torch.Tensor | None = None
     count = 0
     loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=0)
@@ -69,32 +69,50 @@ def _mean_action(
     return total / count
 
 
-def _write_metrics(output: Path, metrics: dict[str, Any], overwrite: bool) -> None:
-    """Atomically persist metrics, without silently replacing an existing file."""
+def _backup_output(output: Path) -> Path:
+    """Hard-link an existing result to a unique, recoverable backup."""
+    suffix = f".{os.getpid()}.bak"
+    sequence = 0
+    while True:
+        candidate = output.with_name(f"{output.name}.{sequence}{suffix}")
+        try:
+            os.link(output, candidate)
+        except FileExistsError:
+            sequence += 1
+            continue
+        return candidate
+
+
+def _write_metrics(output: Path, metrics: dict[str, Any], overwrite: bool) -> Path | None:
+    """Atomically persist metrics and return the backup made before an overwrite."""
     output.parent.mkdir(parents=True, exist_ok=True)
     if output.exists() and not overwrite:
         raise FileExistsError(f"output already exists (pass --overwrite to replace it): {output}")
 
     lock = output.with_name(f".{output.name}.lock")
-    try:
-        lock_fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-    except FileExistsError as error:
-        raise FileExistsError(f"output is being written by another evaluator: {output}") from error
-
     temporary = output.with_name(f".{output.name}.{os.getpid()}.tmp")
-    try:
-        with os.fdopen(lock_fd, "w"):
-            pass
+    backup: Path | None = None
+    with lock.open("a+", encoding="utf-8") as lock_file:
+        try:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise FileExistsError(f"output is being written by another evaluator: {output}") from error
+
+        # Recheck after locking: another evaluator may have written the output
+        # between the optimistic check above and this process acquiring the lock.
         if output.exists() and not overwrite:
             raise FileExistsError(f"output already exists (pass --overwrite to replace it): {output}")
-        with temporary.open("w", encoding="utf-8") as file:
-            file.write(json.dumps(metrics, ensure_ascii=False, indent=2) + "\n")
-            file.flush()
-            os.fsync(file.fileno())
-        os.replace(temporary, output)
-    finally:
-        temporary.unlink(missing_ok=True)
-        lock.unlink(missing_ok=True)
+        if output.exists():
+            backup = _backup_output(output)
+        try:
+            with temporary.open("w", encoding="utf-8") as file:
+                file.write(json.dumps(metrics, ensure_ascii=False, indent=2) + "\n")
+                file.flush()
+                os.fsync(file.fileno())
+            os.replace(temporary, output)
+        finally:
+            temporary.unlink(missing_ok=True)
+    return backup
 
 
 def evaluate(
@@ -116,7 +134,7 @@ def evaluate(
     config = PreTrainedConfig.from_pretrained(checkpoint)
     config.device = device
     metadata = LeRobotDatasetMetadata(dataset_repo_id)
-    delta_timestamps = {ACTION: [index / metadata.fps for index in config.action_delta_indices]}
+    delta_timestamps = resolve_delta_timestamps(config, metadata)
     dataset = LeRobotDataset(
         dataset_repo_id,
         episodes=list(holdout_episodes),
@@ -185,7 +203,11 @@ def main() -> None:
     parser.add_argument("--dataset.repo_id", dest="dataset_repo_id", required=True)
     parser.add_argument("--holdout-episodes", type=_parse_episodes, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--overwrite", action="store_true", help="replace an existing output atomically")
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="replace an existing output atomically after preserving it as a versioned .bak file",
+    )
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--video-backend", "--dataset.video_backend", dest="video_backend", default="pyav")

@@ -1,12 +1,13 @@
 """Unit tests for the hardware-free SO-101 offline evaluator."""
 
+import fcntl
 import importlib.util
 import re
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import torch
-
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "so101_offline_eval.py"
 SPEC = importlib.util.spec_from_file_location("so101_offline_eval", SCRIPT)
@@ -63,24 +64,70 @@ def test_write_metrics_rejects_existing_output_without_overwrite(tmp_path: Path)
     assert output.read_text() == "important existing result\n"
 
 
-def test_write_metrics_replaces_existing_output_atomically_when_requested(tmp_path: Path) -> None:
+def test_write_metrics_backs_up_and_replaces_existing_output_when_requested(tmp_path: Path) -> None:
     output = tmp_path / "offline_eval.json"
     output.write_text("old result\n")
 
-    offline_eval._write_metrics(output, {"new": "metrics"}, overwrite=True)
+    backup = offline_eval._write_metrics(output, {"new": "metrics"}, overwrite=True)
 
     assert output.read_text() == '{\n  "new": "metrics"\n}\n'
+    assert backup is not None
+    assert backup.read_text() == "old result\n"
     assert not list(tmp_path.glob(".*.tmp"))
-    assert not list(tmp_path.glob(".*.lock"))
+    assert (tmp_path / ".offline_eval.json.lock").exists()
 
 
 def test_write_metrics_rejects_concurrent_writer(tmp_path: Path) -> None:
     output = tmp_path / "offline_eval.json"
     lock = tmp_path / ".offline_eval.json.lock"
-    lock.touch()
+    with lock.open("a+") as lock_file:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        with pytest.raises(FileExistsError, match="being written by another evaluator"):
+            offline_eval._write_metrics(output, {"new": "metrics"}, overwrite=False)
 
-    with pytest.raises(FileExistsError, match="being written by another evaluator"):
-        offline_eval._write_metrics(output, {"new": "metrics"}, overwrite=False)
+
+def test_write_metrics_reuses_stale_lock_file(tmp_path: Path) -> None:
+    output = tmp_path / "offline_eval.json"
+    lock = tmp_path / ".offline_eval.json.lock"
+    lock.write_text("left by a terminated evaluator\n")
+
+    offline_eval._write_metrics(output, {"new": "metrics"}, overwrite=False)
+
+    assert output.read_text() == '{\n  "new": "metrics"\n}\n'
+
+
+def test_evaluate_uses_standard_delta_timestamp_resolution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir()
+    config = SimpleNamespace(device="cpu")
+    metadata = object()
+
+    monkeypatch.setattr(offline_eval.PreTrainedConfig, "from_pretrained", lambda _: config)
+    monkeypatch.setattr(offline_eval, "LeRobotDatasetMetadata", lambda _: metadata)
+
+    class ResolutionReachedError(Exception):
+        pass
+
+    def resolve(received_config: object, received_metadata: object) -> None:
+        assert received_config is config
+        assert received_metadata is metadata
+        raise ResolutionReachedError
+
+    monkeypatch.setattr(offline_eval, "resolve_delta_timestamps", resolve)
+
+    with pytest.raises(ResolutionReachedError):
+        offline_eval.evaluate(
+            checkpoint=checkpoint,
+            dataset_repo_id="example/dataset",
+            holdout_episodes=[8, 9],
+            output=tmp_path / "metrics.json",
+            batch_size=1,
+            device="cpu",
+            video_backend="pyav",
+            max_batches=1,
+        )
 
 
 def test_cli_accepts_training_video_backend_spelling(monkeypatch: pytest.MonkeyPatch) -> None:

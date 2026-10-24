@@ -139,6 +139,22 @@ TASK_DESCRIPTION="Pick up the black cube" scripts/record_so101.sh --dry-run
 DATASET_REPO_ID=my-org/so101_cube POLICY=act scripts/train_so101.sh --dry-run
 ```
 
+Evaluate a local checkpoint on held-out episodes without importing robot, camera,
+or serial modules:
+
+```bash
+uv run python scripts/so101_offline_eval.py \
+  --checkpoint outputs/train/act/checkpoints/last/pretrained_model \
+  --dataset.repo_id=my-org/so101_cube \
+  --holdout-episodes=8,9 \
+  --output=outputs/train/act/offline_eval.json \
+  --dataset.video_backend=pyav
+```
+
+The output is JSON containing mean policy loss, L1 loss, and raw-action baseline
+metrics. Existing output is rejected by default. `--overwrite` preserves the old
+result beside it as a versioned `.bak` file before atomically replacing it.
+
 The connection-layer environment-variable contract is in
 [`scripts/so101_env.sh`](./scripts/so101_env.sh). The current SO-101 operating
 procedure and real-hardware safety boundaries have a single canonical record in
